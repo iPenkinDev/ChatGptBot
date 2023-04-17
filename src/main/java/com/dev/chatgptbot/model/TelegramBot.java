@@ -1,14 +1,30 @@
 package com.dev.chatgptbot.model;
 
 import com.dev.chatgptbot.config.TelegramBotConfig;
+import com.dev.chatgptbot.converter.OggToWavConverter;
 import com.dev.chatgptbot.service.MessageService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.extern.log4j.Log4j;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.api.methods.GetFile;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.Audio;
+import org.telegram.telegrambots.meta.api.objects.File;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.Voice;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.UnsupportedAudioFileException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.net.URLConnection;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 
 @Component
 @Log4j
@@ -19,11 +35,13 @@ public class TelegramBot extends TelegramLongPollingBot {
     private final TelegramBotConfig telegramBotConfig;
 
     private final ChatGpt chatGpt;
+    private final OggToWavConverter oggToWavConverter;
 
-    public TelegramBot(MessageService sendMessageService, TelegramBotConfig telegramBotConfig, ChatGpt chatGpt) {
+    public TelegramBot(MessageService sendMessageService, TelegramBotConfig telegramBotConfig, ChatGpt chatGpt, OggToWavConverter oggToWavConverter) {
         this.sendMessageService = sendMessageService;
         this.telegramBotConfig = telegramBotConfig;
         this.chatGpt = chatGpt;
+        this.oggToWavConverter = oggToWavConverter;
     }
 
     @Override
@@ -43,18 +61,53 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
         String messageText = update.getMessage().getText();
 
+
         try {
             handleCommand(messageText, update.getMessage().getChatId());
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
+
+        if (update.hasMessage() && update.getMessage().hasVoice()) {
+            getVoiceFile(update);
+
+            //convert to wav
+            try {
+                oggToWavConverter.convertTelegramVoiceToWav();
+                handleCommand(messageText, update.getMessage().getChatId());
+            } catch (IOException | LineUnavailableException | UnsupportedAudioFileException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
+    private void getVoiceFile(Update update) {
+        Voice voice = update.getMessage().getVoice();
+        String fileId = voice.getFileId();
+
+        GetFile getFile = new GetFile();
+        getFile.setFileId(fileId);
+
+        try {
+            File file = execute(getFile);
+            InputStream is = new URL("https://api.telegram.org/file/bot" + getBotToken() + "/" + file.getFilePath()).openStream();
+
+            // сохраняем голосовое сообщение в файл
+            Files.copy(is, Paths.get("voice.ogg"), StandardCopyOption.REPLACE_EXISTING);
+        } catch (TelegramApiException | IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
     private void handleCommand(String messageText, long chatId) throws JsonProcessingException {
+        if (messageText == null) {
+            return;
+        }
         if (messageText.equals("/start")) {
             sendTextMessage(chatId, "Hello, I'm ChatGptBot!");
         } else {
-            sendTextMessage(chatId, chatGpt.sendMessageToChatGptBot(messageText));
+            sendTextMessage(chatId, String.valueOf(chatGpt.sendMessageToChatGptBot(messageText)));
         }
     }
 
@@ -69,5 +122,4 @@ public class TelegramBot extends TelegramLongPollingBot {
             e.printStackTrace();
         }
     }
-
 }

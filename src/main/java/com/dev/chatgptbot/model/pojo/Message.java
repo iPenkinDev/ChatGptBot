@@ -1,4 +1,4 @@
-package com.dev.chatgptbot.model;
+package com.dev.chatgptbot.model.pojo;
 
 import lombok.Data;
 import org.springframework.stereotype.Component;
