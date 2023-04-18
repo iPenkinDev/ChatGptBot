@@ -3,14 +3,10 @@ package com.dev.chatgptbot.service.impl;
 import com.dev.chatgptbot.config.ChatGptConfig;
 import com.dev.chatgptbot.model.pojo.ChatCompletion;
 import com.dev.chatgptbot.service.MessageService;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.log4j.Log4j;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.*;
-import org.springframework.http.converter.ByteArrayHttpMessageConverter;
-import org.springframework.http.converter.FormHttpMessageConverter;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -18,11 +14,9 @@ import org.springframework.web.client.RestTemplate;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
 
+import java.io.File;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @SuppressWarnings("FieldCanBeLocal")
 @Service
@@ -76,6 +70,24 @@ public class MessageServiceImpl implements MessageService {
 
     }
 
+    @Override
+    public String sendVoiceRequest() {
+        try {
+            System.out.println("sendVoiceRequest");
+            HttpEntity<MultiValueMap<String, Object>> requestEntityForVoice = transcribeAudio();
+            System.out.println("requestEntityForVoice " + requestEntityForVoice);
+            String response = restTemplate.postForObject("https://api.openai.com/v1/audio/transcriptions",
+                    requestEntityForVoice,
+                    String.class);
+            System.out.println("response " + response);
+            objectMapper.registerModule(new JavaTimeModule());
+            chatCompletion = objectMapper.readValue(response, ChatCompletion.class);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return chatCompletion.getChoices().get(0).getMessage().getContent();
+    }
+
     private HttpEntity<Map<String, Object>> buildRequest(List<String> messageHistory) {
 
         //create headers
@@ -99,33 +111,40 @@ public class MessageServiceImpl implements MessageService {
         return new HttpEntity<>(requestBody, headers);
     }
 
-    public String transcribeAudio(String modelName) throws Exception {
-        // Создание RestTemplate с поддержкой отправки тела запроса Multipart
-        restTemplate.getMessageConverters().add(new ByteArrayHttpMessageConverter());
-        restTemplate.getMessageConverters().add(new FormHttpMessageConverter());
+    public HttpEntity<MultiValueMap<String, Object>> transcribeAudio() throws Exception {
+
+        String fileName = "voice.wav"; // имя файла
+        Class<? extends MessageServiceImpl> currentClass = getClass();
+        ClassLoader classLoader = currentClass.getClassLoader();
+        File file = new File(Objects.requireNonNull(classLoader.getResource(fileName)).getFile());
+
+        System.out.println("file " + file);
 
         // Формирование заголовков для запроса к OpenAI API
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
         headers.add("Authorization", "Bearer " + chatGptConfig.getChatToken());
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
         // Формирование тела запроса с добавлением аудио файла и наименованием модели
         MultiValueMap<String, Object> requestBody = new LinkedMultiValueMap<>();
-        requestBody.add("file", "voice.wav");
-        requestBody.add("model", modelName);
+        requestBody.add("file", file);
+        requestBody.add("model", "whisper-1");
+        System.out.println("requestBody"+ requestBody);
 
         // Формирование объекта HttpEntity для отправки запроса
-        HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(requestBody, headers);
+//        HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(requestBody, headers);
+//        System.out.println("requestEntity " + requestEntity);
 
         // Отправка запроса к OpenAI API
-        ResponseEntity<String> response = restTemplate.exchange(
-                new URI("https://api.openai.com/v1/audio/transcriptions"),
-                HttpMethod.POST,
-                requestEntity,
-                String.class
-        );
+//        ResponseEntity<String> response = restTemplate.exchange(
+//                new URI("https://api.openai.com/v1/audio/transcriptions"),
+//                HttpMethod.POST,
+//                requestEntity,
+//                String.class
+//        );
+//        System.out.println("response " + response);
 
         // Обработка ответа от OpenAI API
-        return response.getBody();
+        return new HttpEntity<>(requestBody, headers);
     }
 }

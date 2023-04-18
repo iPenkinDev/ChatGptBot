@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.GetFile;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.api.objects.Audio;
 import org.telegram.telegrambots.meta.api.objects.File;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.Voice;
@@ -20,9 +19,7 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.net.URLConnection;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
@@ -69,20 +66,23 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
 
         if (update.hasMessage() && update.getMessage().hasVoice()) {
-            getVoiceFile(update);
+            Voice voice = update.getMessage().getVoice();
+            getVoiceFile(voice);
 
-            //convert to wav
+            String text = chatGpt.sendVoiceMessageToChatGptBot();
+
             try {
                 oggToWavConverter.convertTelegramVoiceToWav();
-                handleCommand(messageText, update.getMessage().getChatId());
-            } catch (IOException | LineUnavailableException | UnsupportedAudioFileException e) {
+                System.out.println("After convert");
+                handleCommand(text, update.getMessage().getChatId());
+                System.out.println("handleCommand" + text);
+            } catch (UnsupportedAudioFileException | LineUnavailableException | IOException e) {
                 throw new RuntimeException(e);
             }
         }
     }
 
-    private void getVoiceFile(Update update) {
-        Voice voice = update.getMessage().getVoice();
+    private void getVoiceFile(Voice voice) {
         String fileId = voice.getFileId();
 
         GetFile getFile = new GetFile();
@@ -107,7 +107,9 @@ public class TelegramBot extends TelegramLongPollingBot {
         if (messageText.equals("/start")) {
             sendTextMessage(chatId, "Hello, I'm ChatGptBot!");
         } else {
-            sendTextMessage(chatId, String.valueOf(chatGpt.sendMessageToChatGptBot(messageText)));
+         //   sendTextMessage(chatId, String.valueOf(chatGpt.sendMessageToChatGptBot(messageText)));
+            sendTextMessage(chatId, String.valueOf(chatGpt.sendVoiceMessageToChatGptBot()));
+            System.out.println("HandleCommand");
         }
     }
 
