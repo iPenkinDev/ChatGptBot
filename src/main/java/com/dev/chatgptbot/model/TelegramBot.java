@@ -6,6 +6,8 @@ import com.dev.chatgptbot.service.MessageService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.extern.log4j.Log4j;
 import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.commons.CommonsMultipartFile;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.GetFile;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -69,17 +71,25 @@ public class TelegramBot extends TelegramLongPollingBot {
             Voice voice = update.getMessage().getVoice();
             getVoiceFile(voice);
 
-            String text = chatGpt.sendVoiceMessageToChatGptBot();
-
             try {
+                String text = chatGpt.sendVoiceMessageToChatGptBot(messageText);
                 oggToWavConverter.convertTelegramVoiceToWav();
                 System.out.println("After convert");
-                handleCommand(text, update.getMessage().getChatId());
-                System.out.println("handleCommand" + text);
+                handleVoiceCommand(text, update.getMessage().getChatId());
             } catch (UnsupportedAudioFileException | LineUnavailableException | IOException e) {
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    private void handleVoiceCommand(String messageText, Long chatId) throws IOException {
+
+        if (messageText.equals("/start")) {
+            sendTextMessage(chatId, "Hello, I'm ChatGptBot!");
+        } else {
+            sendTextMessage(chatId, String.valueOf(chatGpt.sendVoiceMessageToChatGptBot(messageText)));
+        }
+
     }
 
     private void getVoiceFile(Voice voice) {
@@ -107,9 +117,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         if (messageText.equals("/start")) {
             sendTextMessage(chatId, "Hello, I'm ChatGptBot!");
         } else {
-         //   sendTextMessage(chatId, String.valueOf(chatGpt.sendMessageToChatGptBot(messageText)));
-            sendTextMessage(chatId, String.valueOf(chatGpt.sendVoiceMessageToChatGptBot()));
-            System.out.println("HandleCommand");
+            sendTextMessage(chatId, String.valueOf(chatGpt.sendMessageToChatGptBot(messageText)));
         }
     }
 
