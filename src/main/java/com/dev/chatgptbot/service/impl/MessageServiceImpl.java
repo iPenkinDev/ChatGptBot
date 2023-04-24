@@ -34,7 +34,6 @@ public class MessageServiceImpl implements MessageService {
     private final ChatGptConfig chatGptConfig;
     private final ObjectMapper objectMapper;
     private ChatCompletion chatCompletion;
-    private List<String> messageHistory = new ArrayList<>();
 
     @Autowired
     public MessageServiceImpl(ChatGptConfig chatGptConfig,
@@ -59,11 +58,9 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     public String sendRequest(String message) {
-        //create message history
-        messageHistory.add(message);
 
         //send request
-        HttpEntity<Map<String, Object>> requestEntity = buildRequest(messageHistory);
+        HttpEntity<Map<String, Object>> requestEntity = buildRequest(message);
         String response = restTemplate.postForObject(chatGptConfig.getChatUrl(), requestEntity, String.class);
 
         objectMapper.registerModule(new JavaTimeModule());
@@ -78,7 +75,7 @@ public class MessageServiceImpl implements MessageService {
 
 
 
-    private HttpEntity<Map<String, Object>> buildRequest(List<String> messageHistory) {
+    private HttpEntity<Map<String, Object>> buildRequest(String message) {
 
         //create headers
         HttpHeaders headers = new HttpHeaders();
@@ -91,12 +88,12 @@ public class MessageServiceImpl implements MessageService {
         List<Map<String, String>> messages = new ArrayList<>();
         Map<String, String> userMessage = new HashMap<>();
         userMessage.put("role", "user");
-        userMessage.put("content", messageHistory.get(messageHistory.size() - 1));
-        log.debug("message history: " + messageHistory);
+        userMessage.put("content", message);
+        log.debug("message: " + message);
 
         messages.add(userMessage);
         requestBody.put("messages", messages);
-        requestBody.put("temperature", 0.3);
+        requestBody.put("temperature", 0.5);
 
         return new HttpEntity<>(requestBody, headers);
     }

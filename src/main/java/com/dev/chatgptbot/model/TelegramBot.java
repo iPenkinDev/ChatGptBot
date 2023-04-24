@@ -59,7 +59,12 @@ public class TelegramBot extends TelegramLongPollingBot {
             return;
         }
         String messageText = update.getMessage().getText();
-
+        System.out.println("messageText = " + messageText);
+        try {
+            messageText = chatGpt.sendVoiceMessageToChatGptBot(messageText);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
         try {
             handleCommand(messageText, update.getMessage().getChatId());
@@ -70,26 +75,13 @@ public class TelegramBot extends TelegramLongPollingBot {
         if (update.hasMessage() && update.getMessage().hasVoice()) {
             Voice voice = update.getMessage().getVoice();
             getVoiceFile(voice);
-
             try {
-                String text = chatGpt.sendVoiceMessageToChatGptBot(messageText);
+                System.out.println("text = " + messageText);
                 oggToWavConverter.convertTelegramVoiceToWav();
-                System.out.println("After convert");
-                handleVoiceCommand(text, update.getMessage().getChatId());
             } catch (UnsupportedAudioFileException | LineUnavailableException | IOException e) {
                 throw new RuntimeException(e);
             }
         }
-    }
-
-    private void handleVoiceCommand(String messageText, Long chatId) throws IOException {
-
-        if (messageText.equals("/start")) {
-            sendTextMessage(chatId, "Hello, I'm ChatGptBot!");
-        } else {
-            sendTextMessage(chatId, String.valueOf(chatGpt.sendVoiceMessageToChatGptBot(messageText)));
-        }
-
     }
 
     private void getVoiceFile(Voice voice) {

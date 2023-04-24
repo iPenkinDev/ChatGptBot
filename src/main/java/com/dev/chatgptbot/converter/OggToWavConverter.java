@@ -22,7 +22,6 @@ public class OggToWavConverter {
 
         din = AudioSystem.getAudioInputStream(decodedFormat, in);
         AudioSystem.write(din, AudioFileFormat.Type.WAVE, new File("voice.wav"));
-        System.out.println("Converted to wav");
         in.close();
     }
 }
