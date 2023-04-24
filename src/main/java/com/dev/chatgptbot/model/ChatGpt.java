@@ -2,16 +2,10 @@ package com.dev.chatgptbot.model;
 
 import com.dev.chatgptbot.service.MessageService;
 import com.dev.chatgptbot.service.VoiceResponseService;
-import com.dev.chatgptbot.service.VoiceService;
-import com.google.gson.JsonObject;
 import lombok.extern.log4j.Log4j;
-import org.springframework.http.HttpEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.web.multipart.MultipartFile;
-import retrofit2.Call;
 
 import java.io.IOException;
-import java.util.Map;
 
 @Component
 @Log4j
