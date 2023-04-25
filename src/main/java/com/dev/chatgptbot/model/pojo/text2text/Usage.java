@@ -1,9 +1,8 @@
-package com.dev.chatgptbot.model.pojo;
+package com.dev.chatgptbot.model.pojo.text2text;
 
 import lombok.Data;
 import org.springframework.stereotype.Component;
 
-@Component
 @Data
 public class Usage {
 

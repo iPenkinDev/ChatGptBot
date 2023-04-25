@@ -1,8 +1,7 @@
 package com.dev.chatgptbot.service.impl;
 
 import com.dev.chatgptbot.config.ChatGptConfig;
-import com.dev.chatgptbot.model.pojo.ChatCompletion;
-import com.dev.chatgptbot.model.pojo.VoiceToString;
+import com.dev.chatgptbot.model.pojo.text2text.ChatCompletion;
 import com.dev.chatgptbot.service.MessageService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -10,19 +9,10 @@ import lombok.extern.log4j.Log4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
 
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.UnsupportedAudioFileException;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 
 @SuppressWarnings("ALL")
@@ -89,7 +79,6 @@ public class MessageServiceImpl implements MessageService {
         Map<String, String> userMessage = new HashMap<>();
         userMessage.put("role", "user");
         userMessage.put("content", message);
-        log.debug("message: " + message);
 
         messages.add(userMessage);
         requestBody.put("messages", messages);

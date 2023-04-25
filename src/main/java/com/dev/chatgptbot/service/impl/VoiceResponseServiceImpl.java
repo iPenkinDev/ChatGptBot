@@ -1,7 +1,8 @@
 package com.dev.chatgptbot.service.impl;
 
 import com.dev.chatgptbot.config.ChatGptConfig;
-import com.dev.chatgptbot.model.pojo.VoiceToString;
+import com.dev.chatgptbot.model.TelegramBot;
+import com.dev.chatgptbot.model.pojo.voice2text.VoiceToString;
 import com.dev.chatgptbot.service.VoiceResponseService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.log4j.Log4j;
@@ -64,7 +65,7 @@ public class VoiceResponseServiceImpl implements VoiceResponseService {
 
     private String response(OkHttpClient client, Request request) {
         try (Response response = client.newCall(request).execute()) {
-                voiceToString = objectMapper.readValue(response.body().string(), VoiceToString.class);
+            voiceToString = objectMapper.readValue(response.body().string(), VoiceToString.class);
 
             return voiceToString.getText();
         } catch (IOException e) {
