@@ -10,7 +10,7 @@ import java.util.ArrayList;
 public class OggToWavConverter {
 
     public void convertTelegramVoiceToWav() throws IOException, LineUnavailableException, UnsupportedAudioFileException {
-        File file = new File("voice.ogg");
+        File file = new File("voice/voice.ogg");
         AudioInputStream in = AudioSystem.getAudioInputStream(file);
         AudioInputStream din = null;
         AudioFormat baseFormat = in.getFormat();
@@ -21,7 +21,7 @@ public class OggToWavConverter {
                 baseFormat.getSampleRate(), false);
 
         din = AudioSystem.getAudioInputStream(decodedFormat, in);
-        AudioSystem.write(din, AudioFileFormat.Type.WAVE, new File("voice.wav"));
+        AudioSystem.write(din, AudioFileFormat.Type.WAVE, new File("voice/voice.wav"));
         in.close();
     }
 }

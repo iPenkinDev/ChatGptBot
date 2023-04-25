@@ -3,6 +3,7 @@ package com.dev.chatgptbot.service.impl;
 import com.dev.chatgptbot.config.ChatGptConfig;
 import com.dev.chatgptbot.model.pojo.text2text.ChatCompletion;
 import com.dev.chatgptbot.service.MessageService;
+import com.dev.chatgptbot.util.ChatGptUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.log4j.Log4j;
@@ -22,6 +23,7 @@ public class MessageServiceImpl implements MessageService {
 
     private final RestTemplate restTemplate;
     private final ChatGptConfig chatGptConfig;
+    private final ChatGptUtils chatGptUtils;
     private final ObjectMapper objectMapper;
     private ChatCompletion chatCompletion;
 
@@ -29,10 +31,11 @@ public class MessageServiceImpl implements MessageService {
     public MessageServiceImpl(ChatGptConfig chatGptConfig,
                               ObjectMapper objectMapper,
                               RestTemplate restTemplate,
-                              ChatCompletion chatCompletion) {
+                              ChatGptUtils chatGptUtils, ChatCompletion chatCompletion) {
         this.chatGptConfig = chatGptConfig;
         this.objectMapper = objectMapper;
         this.restTemplate = restTemplate;
+        this.chatGptUtils = chatGptUtils;
         this.chatCompletion = chatCompletion;
     }
 
@@ -51,7 +54,7 @@ public class MessageServiceImpl implements MessageService {
 
         //send request
         HttpEntity<Map<String, Object>> requestEntity = buildRequest(message);
-        String response = restTemplate.postForObject(chatGptConfig.getChatUrl(), requestEntity, String.class);
+        String response = restTemplate.postForObject(chatGptUtils.getGPT_SEND_MESSAGE_URL(), requestEntity, String.class);
 
         objectMapper.registerModule(new JavaTimeModule());
         try {

@@ -1,9 +1,9 @@
 package com.dev.chatgptbot.service.impl;
 
 import com.dev.chatgptbot.config.ChatGptConfig;
-import com.dev.chatgptbot.model.TelegramBot;
 import com.dev.chatgptbot.model.pojo.voice2text.VoiceToString;
 import com.dev.chatgptbot.service.VoiceResponseService;
+import com.dev.chatgptbot.util.ChatGptUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.log4j.Log4j;
 import okhttp3.*;
@@ -18,16 +18,18 @@ import java.io.IOException;
 public class VoiceResponseServiceImpl implements VoiceResponseService {
 
     private final ChatGptConfig chatGptConfig;
+    private final ChatGptUtils chatGptUtils;
     private VoiceToString voiceToString;
     private final OkHttpClient client;
     private final ObjectMapper objectMapper;
 
     @Autowired
     public VoiceResponseServiceImpl(ChatGptConfig chatGptConfig,
-                                    VoiceToString voiceToString,
+                                    ChatGptUtils chatGptUtils, VoiceToString voiceToString,
                                     OkHttpClient client,
                                     ObjectMapper objectMapper) {
         this.chatGptConfig = chatGptConfig;
+        this.chatGptUtils = chatGptUtils;
         this.voiceToString = voiceToString;
         this.client = client;
         this.objectMapper = objectMapper;
@@ -43,7 +45,7 @@ public class VoiceResponseServiceImpl implements VoiceResponseService {
     public String requestVoiceToChatGpt() {
         RequestBody requestBody = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
-                .addFormDataPart("file", "voice.wav", RequestBody.create(MediaType.parse("audio/mpeg"), new File("D:\\Pet Project\\ChatGptBot\\voice.wav")))
+                .addFormDataPart("file", "voice.wav", RequestBody.create(MediaType.parse("audio/mpeg"), new File("voice/voice.wav")))
                 .addFormDataPart("model", "whisper-1")
                 .build();
 
@@ -53,7 +55,7 @@ public class VoiceResponseServiceImpl implements VoiceResponseService {
                 .build();
 
         Request request = new Request.Builder()
-                .url("https://api.openai.com/v1/audio/transcriptions")
+                .url(chatGptUtils.getGPT_SEND_VOICE_URL())
                 .headers(headers)
                 .post(requestBody)
                 .build();

@@ -2,13 +2,13 @@ package com.dev.chatgptbot.model;
 
 import com.dev.chatgptbot.config.TelegramBotConfig;
 import com.dev.chatgptbot.converter.OggToWavConverter;
-import com.dev.chatgptbot.service.VoiceResponseService;
+import com.dev.chatgptbot.model.pojo.text2text.MessageMarkdownEntity;
+import com.dev.chatgptbot.model.pojo.text2text.MessageSpliterator;
+import com.dev.chatgptbot.util.TelegramBotUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j;
-import org.springframework.http.converter.json.GsonBuilderUtils;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.GetFile;
@@ -26,6 +26,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 
 @Component
 @Getter
@@ -34,13 +35,19 @@ import java.nio.file.StandardCopyOption;
 public class TelegramBot extends TelegramLongPollingBot {
 
     private final TelegramBotConfig telegramBotConfig;
+    private final TelegramBotUtils telegramBotUtils;
     private final ChatGpt chatGpt;
+    private final SendMessage sendMessage;
     private final OggToWavConverter oggToWavConverter;
+    private final MessageSpliterator messageSpliterator;
 
-    public TelegramBot(TelegramBotConfig telegramBotConfig, ChatGpt chatGpt, OggToWavConverter oggToWavConverter) {
+    public TelegramBot(TelegramBotConfig telegramBotConfig, TelegramBotUtils telegramBotUtils, ChatGpt chatGpt, SendMessage sendMessage, OggToWavConverter oggToWavConverter, MessageSpliterator messageSpliterator) {
         this.telegramBotConfig = telegramBotConfig;
+        this.telegramBotUtils = telegramBotUtils;
         this.chatGpt = chatGpt;
+        this.sendMessage = sendMessage;
         this.oggToWavConverter = oggToWavConverter;
+        this.messageSpliterator = messageSpliterator;
     }
 
     @Override
@@ -70,7 +77,6 @@ public class TelegramBot extends TelegramLongPollingBot {
             Voice voice = update.getMessage().getVoice();
             getVoiceFile(voice);
             try {
-                System.out.println("text = " + messageText);
                 oggToWavConverter.convertTelegramVoiceToWav();
                 messageText = chatGpt.sendVoiceMessageToChatGptBot(messageText);
                 handleCommand(messageText, update.getMessage().getChatId());
@@ -88,10 +94,13 @@ public class TelegramBot extends TelegramLongPollingBot {
 
         try {
             File file = execute(getFile);
-            InputStream is = new URL("https://api.telegram.org/file/bot" + getBotToken() + "/" + file.getFilePath()).openStream();
+            InputStream is = new URL(telegramBotUtils.getBOT_GET_VOICE_URL()
+                    + getBotToken()
+                    + "/"
+                    + file.getFilePath()).openStream();
 
             // сохраняем голосовое сообщение в файл
-            Files.copy(is, Paths.get("voice.ogg"), StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(is, Paths.get("voice/voice.ogg"), StandardCopyOption.REPLACE_EXISTING);
         } catch (TelegramApiException | IOException e) {
             e.printStackTrace();
         }
@@ -110,14 +119,37 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     private void sendTextMessage(long chatId, String messageText) {
-        SendMessage message = new SendMessage();
-        message.setChatId(chatId);
-        message.setText(messageText);
-        log.debug("response: " + messageText);
-        try {
-            execute(message);
-        } catch (TelegramApiException e) {
-            e.printStackTrace();
+
+        int maxLength = 4096; // максимальная длина сообщения
+
+        if (messageText.length() > maxLength) {
+            // разделение сообщения на несколько частей
+            ArrayList<String> messages = messageSpliterator.splitMessage(messageText, maxLength);
+
+            // отправка каждой части сообщения отдельно
+            for (String msg : messages) {
+                        sendMessage.setChatId(chatId);
+                        sendMessage.setText(msg);
+                try {
+                    execute(sendMessage);
+                } catch (TelegramApiException e) {
+                    e.printStackTrace();
+                }
+            }
+        } else {
+            // отправка сообщения целиком
+            sendMessage.setChatId(chatId);
+            sendMessage.setText(messageText);
+            sendMessage.setText(MessageMarkdownEntity.escapeMarkdown(sendMessage.getText()));
+            sendMessage.setParseMode("Markdown");
+            log.debug("response: " + messageText);
+            try {
+                execute(sendMessage); // отправка сообщения
+            } catch (TelegramApiException e) {
+                e.printStackTrace();
+            }
         }
     }
+
+
 }

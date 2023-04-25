@@ -2,7 +2,5 @@ server.port=8085
 
 bot_name=
 bot_token=
-bot_url=https://api.telegram.org/bot
 
-chat_gpt_url=https://api.openai.com/v1/chat/completions
 chat_gpt_token=
