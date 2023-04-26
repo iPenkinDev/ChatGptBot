@@ -6,6 +6,5 @@ import org.springframework.stereotype.Component;
 @Component
 @Data
 public class VoiceToString {
-
     private String text;
 }
