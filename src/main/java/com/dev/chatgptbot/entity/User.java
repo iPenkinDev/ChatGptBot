@@ -26,10 +26,10 @@ public class User {
     @Column(name = "last_name")
     private String lastName;
 
-    @Column(name = "telegram_id")
+    @Column(name = "telegram_id", unique = true)
     private Long telegramId;
 
-//    @OneToMany(mappedBy = "user")
-//    private List<Message> messages;
+    @OneToMany(mappedBy = "user")
+    private List<Message> messages;
 
 }

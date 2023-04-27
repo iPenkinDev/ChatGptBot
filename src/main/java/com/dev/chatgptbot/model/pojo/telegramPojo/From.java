@@ -4,7 +4,7 @@ import lombok.Data;
 
 @Data
 public class From {
-    private int id;
+    private long id;
     private String first_name;
     private boolean is_bot;
     private String username;

@@ -23,8 +23,8 @@ public class Message {
     @Column(name = "date_message")
     private LocalDateTime date;
 
-//    @ManyToOne
-//    @JoinColumn(name = "user_id", referencedColumnName = "id")
-//    private User user;
+    @ManyToOne
+    @JoinColumn(name = "user_id", referencedColumnName = "id")
+    private User user;
 
 }

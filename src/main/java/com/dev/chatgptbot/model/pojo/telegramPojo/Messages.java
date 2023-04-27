@@ -4,7 +4,7 @@ import lombok.Data;
 import org.telegram.telegrambots.meta.api.objects.Chat;
 
 @Data
-public class Message {
+public class Messages {
     private int message_id;
     private From from;
     private int date;
