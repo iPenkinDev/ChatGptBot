@@ -85,7 +85,7 @@ public class MessageServiceImpl implements MessageService {
 
         messages.add(userMessage);
         requestBody.put("messages", messages);
-        requestBody.put("temperature", 0.5);
+        requestBody.put("temperature", 0.1);
 
         return new HttpEntity<>(requestBody, headers);
     }
