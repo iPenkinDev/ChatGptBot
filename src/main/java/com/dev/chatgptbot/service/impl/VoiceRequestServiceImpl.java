@@ -15,7 +15,7 @@ import java.io.IOException;
 
 @Service
 @Log4j
-public class VoiceResponseServiceImpl implements VoiceResponseService {
+public class VoiceRequestServiceImpl implements VoiceResponseService {
 
     private final ChatGptConfig chatGptConfig;
     private final ChatGptUtils chatGptUtils;
@@ -24,10 +24,10 @@ public class VoiceResponseServiceImpl implements VoiceResponseService {
     private final ObjectMapper objectMapper;
 
     @Autowired
-    public VoiceResponseServiceImpl(ChatGptConfig chatGptConfig,
-                                    ChatGptUtils chatGptUtils, VoiceToString voiceToString,
-                                    OkHttpClient client,
-                                    ObjectMapper objectMapper) {
+    public VoiceRequestServiceImpl(ChatGptConfig chatGptConfig,
+                                   ChatGptUtils chatGptUtils, VoiceToString voiceToString,
+                                   OkHttpClient client,
+                                   ObjectMapper objectMapper) {
         this.chatGptConfig = chatGptConfig;
         this.chatGptUtils = chatGptUtils;
         this.voiceToString = voiceToString;
@@ -60,18 +60,30 @@ public class VoiceResponseServiceImpl implements VoiceResponseService {
                 .post(requestBody)
                 .build();
 
-        log.debug("request: " + request);
+        log.info("request: " + request);
 
         return response(client, request);
     }
 
     private String response(OkHttpClient client, Request request) {
-        try (Response response = client.newCall(request).execute()) {
-            voiceToString = objectMapper.readValue(response.body().string(), VoiceToString.class);
-
-            return voiceToString.getText();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        int retries = 5; // количество попыток повтора
+        while (retries > 0) {
+            try (Response response = client.newCall(request).execute()) {
+                voiceToString = objectMapper.readValue(response.body().string(), VoiceToString.class);
+                return voiceToString.getText();
+            } catch (IOException e) {
+                retries--;
+                if (retries == 0) {
+                    throw new RuntimeException("Error executing request. Maximum number of retries exceeded.", e);
+                }
+                log.error("Error executing request. Trying again in 1 seconds. Retries left: " + retries);
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
         }
+        return "Error executing request";
     }
 }

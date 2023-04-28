@@ -1,7 +1,6 @@
 package com.dev.chatgptbot.service.impl;
 
 import com.dev.chatgptbot.entity.Message;
-import com.dev.chatgptbot.entity.User;
 import com.dev.chatgptbot.model.pojo.telegramPojo.Messages;
 import com.dev.chatgptbot.repository.MessageRepository;
 import com.dev.chatgptbot.repository.UserRepository;

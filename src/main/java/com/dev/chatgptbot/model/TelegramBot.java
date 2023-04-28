@@ -69,7 +69,6 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
 
         String messageText = update.getMessage().getText();
-
         addToDb(update);
         try {
             handleCommand(messageText, update.getMessage().getChatId());
@@ -84,8 +83,9 @@ public class TelegramBot extends TelegramLongPollingBot {
             try {
                 oggToWavConverter.convertTelegramVoiceToWav();
                 messageText = chatGpt.sendVoiceMessageToChatGptBot(messageText);
+                addToDb(update);
                 handleCommand(messageText, update.getMessage().getChatId());
-            } catch (UnsupportedAudioFileException | LineUnavailableException | IOException e) {
+            } catch (UnsupportedAudioFileException | LineUnavailableException | IOException | InterruptedException e) {
                 throw new RuntimeException(e);
             }
         }
@@ -167,7 +167,7 @@ public class TelegramBot extends TelegramLongPollingBot {
             sendMessage.setText(messageText);
             sendMessage.setText(MessageMarkdownEntity.escapeMarkdown(sendMessage.getText()));
             sendMessage.setParseMode("Markdown");
-            log.debug("response: " + messageText);
+            log.info("response: " + messageText);
             try {
                 execute(sendMessage); // отправка сообщения
             } catch (TelegramApiException e) {
@@ -175,6 +175,4 @@ public class TelegramBot extends TelegramLongPollingBot {
             }
         }
     }
-
-
 }

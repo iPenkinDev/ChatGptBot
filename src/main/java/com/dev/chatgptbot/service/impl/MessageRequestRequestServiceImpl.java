@@ -2,7 +2,7 @@ package com.dev.chatgptbot.service.impl;
 
 import com.dev.chatgptbot.config.ChatGptConfig;
 import com.dev.chatgptbot.model.pojo.text2text.ChatCompletion;
-import com.dev.chatgptbot.service.MessageService;
+import com.dev.chatgptbot.service.MessageRequestService;
 import com.dev.chatgptbot.util.ChatGptUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -19,7 +19,7 @@ import java.util.*;
 @SuppressWarnings("ALL")
 @Service
 @Log4j
-public class MessageServiceImpl implements MessageService {
+public class MessageRequestRequestServiceImpl implements MessageRequestService {
 
     private final RestTemplate restTemplate;
     private final ChatGptConfig chatGptConfig;
@@ -28,10 +28,10 @@ public class MessageServiceImpl implements MessageService {
     private ChatCompletion chatCompletion;
 
     @Autowired
-    public MessageServiceImpl(ChatGptConfig chatGptConfig,
-                              ObjectMapper objectMapper,
-                              RestTemplate restTemplate,
-                              ChatGptUtils chatGptUtils, ChatCompletion chatCompletion) {
+    public MessageRequestRequestServiceImpl(ChatGptConfig chatGptConfig,
+                                            ObjectMapper objectMapper,
+                                            RestTemplate restTemplate,
+                                            ChatGptUtils chatGptUtils, ChatCompletion chatCompletion) {
         this.chatGptConfig = chatGptConfig;
         this.objectMapper = objectMapper;
         this.restTemplate = restTemplate;
@@ -51,22 +51,31 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     public String sendRequest(String message) {
+        int retries = 3;
+        while (retries > 0) {
+            try {
+                HttpEntity<Map<String, Object>> requestEntity = buildRequest(message);
+                String response = restTemplate.postForObject(chatGptUtils.getGPT_SEND_MESSAGE_URL(), requestEntity, String.class);
 
-        //send request
-        HttpEntity<Map<String, Object>> requestEntity = buildRequest(message);
-        String response = restTemplate.postForObject(chatGptUtils.getGPT_SEND_MESSAGE_URL(), requestEntity, String.class);
-
-        objectMapper.registerModule(new JavaTimeModule());
-        try {
-            chatCompletion = objectMapper.readValue(response, ChatCompletion.class);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+                objectMapper.registerModule(new JavaTimeModule());
+                chatCompletion = objectMapper.readValue(response, ChatCompletion.class);
+                return chatCompletion.getChoices().get(0).getMessage().getContent();
+            } catch (Exception e) {
+                retries--;
+                if (retries == 0) {
+                    throw new RuntimeException("Request failed after " + retries + " retries.", e);
+                } else {
+                    log.error("Error executing request. Trying again in 1 seconds. Retries left: " + retries);
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            }
         }
-        return chatCompletion.getChoices().get(0).getMessage().getContent();
-
+        throw new RuntimeException("Request failed after all retries.");
     }
-
-
 
     private HttpEntity<Map<String, Object>> buildRequest(String message) {
 

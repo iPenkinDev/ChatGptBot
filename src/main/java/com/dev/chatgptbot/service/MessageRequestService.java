@@ -1,6 +1,6 @@
 package com.dev.chatgptbot.service;
 
-public interface MessageService {
+public interface MessageRequestService {
 
     String sendRequest(String message);
 }

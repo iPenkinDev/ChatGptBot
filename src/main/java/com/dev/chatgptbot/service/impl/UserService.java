@@ -5,7 +5,6 @@ import com.dev.chatgptbot.model.pojo.telegramPojo.Messages;
 import com.dev.chatgptbot.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -30,7 +29,7 @@ public class UserService {
         try {
             return userRepository.getByTelegramId(telegramId);
         } catch (RuntimeException e){
-            log.debug("Resource Not Found Exception");
+            log.error("Resource Not Found Exception");
         }
         return null;
     }
