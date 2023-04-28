@@ -33,6 +33,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Objects;
 
 @Component
 @Getter
@@ -66,10 +67,10 @@ public class TelegramBot extends TelegramLongPollingBot {
         if (!update.hasMessage()) {
             return;
         }
-        String messageText = update.getMessage().getText();
-        User user = userService.create(textToJson(update));
-        messageService.create(textToJson(update), user.getTelegramId());
 
+        String messageText = update.getMessage().getText();
+
+        addToDb(update);
         try {
             handleCommand(messageText, update.getMessage().getChatId());
         } catch (JsonProcessingException e) {
@@ -87,6 +88,16 @@ public class TelegramBot extends TelegramLongPollingBot {
             } catch (UnsupportedAudioFileException | LineUnavailableException | IOException e) {
                 throw new RuntimeException(e);
             }
+        }
+    }
+
+    private void addToDb(Update update) {
+        Messages messages = textToJson(update);
+        if (!Objects.isNull(userService.getByTelegramId(messages.getFrom().getId()))) {
+            messageService.create(messages, messages.getFrom().getId());
+        } else {
+            User user = userService.create(messages);
+            messageService.create(messages, user.getTelegramId());
         }
     }
 

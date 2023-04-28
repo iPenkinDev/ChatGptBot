@@ -3,6 +3,7 @@ package com.dev.chatgptbot.entity;
 import lombok.*;
 
 import javax.persistence.*;
+import java.io.Serializable;
 import java.util.List;
 
 @Entity
@@ -11,7 +12,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "users")
-public class User {
+public class User implements Serializable{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,7 +27,7 @@ public class User {
     @Column(name = "last_name")
     private String lastName;
 
-    @Column(name = "telegram_id", unique = true)
+    @Column(name = "telegram_id")
     private Long telegramId;
 
     @OneToMany(mappedBy = "user")

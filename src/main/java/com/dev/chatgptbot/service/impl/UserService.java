@@ -4,11 +4,13 @@ import com.dev.chatgptbot.entity.User;
 import com.dev.chatgptbot.model.pojo.telegramPojo.Messages;
 import com.dev.chatgptbot.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@Log4j
 public class UserService {
 
     private final UserRepository userRepository;
@@ -19,12 +21,17 @@ public class UserService {
         user.setFirstName(messages.getFrom().getFirst_name());
         user.setLastName(messages.getChat().getLastName());
         user.setTelegramId(messages.getFrom().getId());
-        try {
-            userRepository.save(user);
-        } catch (DataIntegrityViolationException ignored) {
 
-            return user;
-        }
+        userRepository.save(user);
         return user;
+    }
+
+    public User getByTelegramId(Long telegramId) {
+        try {
+            return userRepository.getByTelegramId(telegramId);
+        } catch (RuntimeException e){
+            log.debug("Resource Not Found Exception");
+        }
+        return null;
     }
 }
