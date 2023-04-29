@@ -2,7 +2,7 @@ package com.dev.chatgptbot.service.impl;
 
 import com.dev.chatgptbot.config.ChatGptConfig;
 import com.dev.chatgptbot.model.pojo.voice2text.VoiceToString;
-import com.dev.chatgptbot.service.VoiceResponseService;
+import com.dev.chatgptbot.service.VoiceRequestService;
 import com.dev.chatgptbot.util.ChatGptUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.log4j.Log4j;
@@ -15,7 +15,7 @@ import java.io.IOException;
 
 @Service
 @Log4j
-public class VoiceRequestServiceImpl implements VoiceResponseService {
+public class VoiceRequestServiceImpl implements VoiceRequestService {
 
     private final ChatGptConfig chatGptConfig;
     private final ChatGptUtils chatGptUtils;
@@ -40,6 +40,11 @@ public class VoiceRequestServiceImpl implements VoiceResponseService {
     public String voiceToString(String response) {
         response = requestVoiceToChatGpt();
         return response;
+    }
+
+    @Override
+    public String voiceNotString() {
+        return requestVoiceToChatGpt();
     }
 
     public String requestVoiceToChatGpt() {

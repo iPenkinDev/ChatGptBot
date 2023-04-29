@@ -1,7 +1,7 @@
 package com.dev.chatgptbot.model;
 
 import com.dev.chatgptbot.service.MessageRequestService;
-import com.dev.chatgptbot.service.VoiceResponseService;
+import com.dev.chatgptbot.service.VoiceRequestService;
 import lombok.extern.log4j.Log4j;
 import org.springframework.stereotype.Component;
 
@@ -12,10 +12,10 @@ import java.io.IOException;
 public class ChatGpt {
 
     private final MessageRequestService sendMessageService;
-    private final VoiceResponseService voiceService;
+    private final VoiceRequestService voiceService;
 
 
-    public ChatGpt(MessageRequestService sendMessageService, VoiceResponseService voiceService) {
+    public ChatGpt(MessageRequestService sendMessageService, VoiceRequestService voiceService) {
         this.sendMessageService = sendMessageService;
         this.voiceService = voiceService;
     }
@@ -28,5 +28,9 @@ public class ChatGpt {
     public String sendVoiceMessageToChatGptBot(String response) throws IOException, InterruptedException {
         log.info("sendVoiceMessageToChatGpt: " + response);
         return voiceService.voiceToString(response);
+    }
+    public String sendVoiceMessageToChatGptBot() {
+        log.info("sendVoiceMessageToChatGpt: ");
+        return voiceService.voiceNotString();
     }
 }

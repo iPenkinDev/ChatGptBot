@@ -64,31 +64,43 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-        if (!update.hasMessage()) {
-            return;
+        if (!isText(update)) {
+            String messageText = update.getMessage().getText();
+            Long chatId = update.getMessage().getChatId();
+            handleCommand(messageText, chatId);
+            addToDb(update);
+        } else {
+            String messageText = voiceToText(update);
+            addVoiceToDb(update, messageText);
         }
+    }
 
-        String messageText = update.getMessage().getText();
-        addToDb(update);
+    private void addVoiceToDb(Update update, String messageText) {
+        Messages messages = textToJson(update);
+        if (!Objects.isNull(userService.getByTelegramId(messages.getFrom().getId()))) {
+            messageService.createFromVoice(messageText, messages.getFrom().getId());
+        } else {
+            User user = userService.create(messages);
+            messageService.createFromVoice(messageText, user.getTelegramId());
+        }
+    }
+
+    private boolean isText(Update update) {
+        return update.getMessage().hasVoice();
+    }
+
+    private String voiceToText(Update update) {
+        Voice voice = update.getMessage().getVoice();
+        getVoiceFile(voice);
+        String messageText;
         try {
+            oggToWavConverter.convertTelegramVoiceToWav();
+            messageText = chatGpt.sendVoiceMessageToChatGptBot();
             handleCommand(messageText, update.getMessage().getChatId());
-        } catch (JsonProcessingException e) {
+        } catch (UnsupportedAudioFileException | LineUnavailableException | IOException e) {
             throw new RuntimeException(e);
         }
-
-        if (update.hasMessage() && update.getMessage().hasVoice()) {
-            messageText = update.getMessage().getText();
-            Voice voice = update.getMessage().getVoice();
-            getVoiceFile(voice);
-            try {
-                oggToWavConverter.convertTelegramVoiceToWav();
-                messageText = chatGpt.sendVoiceMessageToChatGptBot(messageText);
-                addToDb(update);
-                handleCommand(messageText, update.getMessage().getChatId());
-            } catch (UnsupportedAudioFileException | LineUnavailableException | IOException | InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
+        return messageText;
     }
 
     private void addToDb(Update update) {
@@ -132,7 +144,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
 
-    private void handleCommand(String messageText, long chatId) throws JsonProcessingException {
+    private void handleCommand(String messageText, long chatId) {
         if (messageText == null) {
             return;
         }
