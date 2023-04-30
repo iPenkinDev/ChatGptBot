@@ -175,6 +175,7 @@ public class TelegramBot extends TelegramLongPollingBot {
             }
         } else {
             // отправка сообщения целиком
+
             sendMessage.setChatId(chatId);
             sendMessage.setText(messageText);
             sendMessage.setText(MessageMarkdownEntity.escapeMarkdown(sendMessage.getText()));

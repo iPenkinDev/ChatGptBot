@@ -26,6 +26,4 @@ public class Message {
 
     @Column(name = "date_message")
     private LocalDateTime date;
-
-
 }
