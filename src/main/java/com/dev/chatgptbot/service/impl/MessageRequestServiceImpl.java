@@ -1,26 +1,25 @@
 package com.dev.chatgptbot.service.impl;
 
 import com.dev.chatgptbot.config.ChatGptConfig;
-import com.dev.chatgptbot.entity.User;
-import com.dev.chatgptbot.model.pojo.telegramPojo.Messages;
 import com.dev.chatgptbot.model.pojo.text2text.ChatCompletion;
-import com.dev.chatgptbot.repository.MessageRepository;
-import com.dev.chatgptbot.repository.UserRepository;
 import com.dev.chatgptbot.service.MessageRequestService;
 import com.dev.chatgptbot.util.ChatGptUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
-import org.telegram.telegrambots.meta.api.objects.Update;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @SuppressWarnings("ALL")
 @Service
@@ -35,7 +34,6 @@ public class MessageRequestServiceImpl implements MessageRequestService {
     private ChatCompletion chatCompletion;
     private final UserService userService;
     private final MessageService messageService;
-    private final Messages messagesFromDb;
     private List<String> messagesList = new ArrayList<>();
 
 
@@ -105,9 +103,10 @@ public class MessageRequestServiceImpl implements MessageRequestService {
     }
 
     private String getMessageByUserFromDb() {
-        User userByTelegramId = userService.getByTelegramId(messagesFromDb.getFrom().getId());
-       com.dev.chatgptbot.entity.Message messageByUserOrderByDateDesc = messageService.getMessageByUserOrderByDateDesc(userByTelegramId);
-        String message = messageByUserOrderByDateDesc.getMessage();
-        return message;
+//        User userByTelegramId = userService.getByTelegramId();
+//       com.dev.chatgptbot.entity.Message messageByUserOrderByDateDesc = messageService.getMessageByUserOrderByDateDesc(userByTelegramId);
+//        String message = messageByUserOrderByDateDesc.getMessage();
+//        return message;
+        return null;
     }
 }

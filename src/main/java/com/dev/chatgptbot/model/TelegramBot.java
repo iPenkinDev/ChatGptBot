@@ -66,9 +66,9 @@ public class TelegramBot extends TelegramLongPollingBot {
     public void onUpdateReceived(Update update) {
         if (!isText(update)) {
             String messageText = update.getMessage().getText();
+            addToDb(update);
             Long chatId = update.getMessage().getChatId();
             handleCommand(messageText, chatId);
-            addToDb(update);
         } else {
             String messageText = voiceToText(update);
             addVoiceToDb(update, messageText);
@@ -113,7 +113,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
-    private Messages textToJson(Update update) {
+    public Messages textToJson(Update update) {
         String jsonString;
         try {
             jsonString = objectMapper.writeValueAsString(update.getMessage());
