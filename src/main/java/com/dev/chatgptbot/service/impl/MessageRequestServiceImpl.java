@@ -82,7 +82,7 @@ public class MessageRequestServiceImpl implements MessageRequestService {
             messageMap.put("role", "user");
             messageMap.put("content", message);
             messages.add(messageMap);
-            log.info("messageMap = " + messageMap);
+           // log.info("messageMap = " + messageMap);
         }
 
         requestBody.put("messages", messages);

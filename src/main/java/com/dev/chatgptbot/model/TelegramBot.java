@@ -69,6 +69,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     @Override
     public void onUpdateReceived(Update update) {
 
+        //text messages
         if (update.hasMessage() && update.getMessage().hasText()) {
             String messageText = update.getMessage().getText();
             Long chatId = update.getMessage().getChatId();
@@ -84,7 +85,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                     sendMessage(chatId, String.valueOf(chatGpt.sendMessageToChatGptBot(messageText)));
             }
 
-        //for voice messages
+        //voice messages
         } else if (update.hasMessage() && update.getMessage().hasVoice()) {
             botCommand();
             Long chatId = update.getMessage().getChatId();
@@ -105,7 +106,6 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     private void startCommandReceived(Long chatId, String firstName) {
-
         String answer = "Hi " + firstName + ", welcome to ChatGPT Bot!";
         sendMessage(chatId, answer);
 
@@ -146,7 +146,6 @@ public class TelegramBot extends TelegramLongPollingBot {
 
         GetFile getFile = new GetFile();
         getFile.setFileId(fileId);
-
         try {
             File file = execute(getFile);
             InputStream is = new URL(telegramBotUtils.getBOT_GET_VOICE_URL()
@@ -154,13 +153,12 @@ public class TelegramBot extends TelegramLongPollingBot {
                     + "/"
                     + file.getFilePath()).openStream();
 
-            // сохраняем голосовое сообщение в файл
+            // save voice in file
             Files.copy(is, Paths.get("voice/voice.ogg"), StandardCopyOption.REPLACE_EXISTING);
         } catch (TelegramApiException | IOException e) {
             e.printStackTrace();
         }
     }
-
 
     private void sendMessage(Long chatId, String messageText) {
 
