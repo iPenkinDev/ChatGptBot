@@ -4,6 +4,7 @@ import com.dev.chatgptbot.config.ChatGptConfig;
 import com.dev.chatgptbot.model.pojo.text2text.ChatCompletion;
 import com.dev.chatgptbot.service.MessageRequestService;
 import com.dev.chatgptbot.util.ChatGptUtils;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.RequiredArgsConstructor;
@@ -36,17 +37,6 @@ public class MessageRequestServiceImpl implements MessageRequestService {
     private final MessageService messageService;
     private List<String> messagesList = new ArrayList<>();
 
-
-    public SendMessage sendMessage(Message message) {
-        String result = "Hello, " + message.getFrom().getFirstName() + "!";
-        System.out.println(result);
-
-        return SendMessage.builder()
-                .chatId(message.getChatId().toString())
-                .text(result)
-                .build();
-    }
-
     @Override
     public String sendRequest(String message) {
         int retries = 3;
@@ -58,16 +48,16 @@ public class MessageRequestServiceImpl implements MessageRequestService {
                 objectMapper.registerModule(new JavaTimeModule());
                 chatCompletion = objectMapper.readValue(response, ChatCompletion.class);
                 return chatCompletion.getChoices().get(0).getMessage().getContent();
-            } catch (Exception e) {
+            } catch (RuntimeException | JsonProcessingException e) {
                 retries--;
                 if (retries == 0) {
-                    throw new RuntimeException("Request failed after " + retries + " retries.", e);
+                    log.error("Request failed after " + retries + " retries.", e);
                 } else {
                     log.error("Error executing request. Trying again in 1 seconds. Retries left: " + retries);
                     try {
                         Thread.sleep(1000);
                     } catch (InterruptedException ex) {
-                        ex.printStackTrace();
+                        log.error("InterruptedExcxeption: " + ex.getMessage());
                     }
                 }
             }
@@ -77,8 +67,7 @@ public class MessageRequestServiceImpl implements MessageRequestService {
 
     private HttpEntity<Map<String, Object>> buildRequest(String textMessage) {
 
-        messagesList.add(getMessageByUserFromDb());
-        System.out.println("messagesList = " + messagesList);
+        messagesList.add(textMessage);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -93,7 +82,7 @@ public class MessageRequestServiceImpl implements MessageRequestService {
             messageMap.put("role", "user");
             messageMap.put("content", message);
             messages.add(messageMap);
-            System.out.println("messageMap = " + messageMap);
+            log.info("messageMap = " + messageMap);
         }
 
         requestBody.put("messages", messages);

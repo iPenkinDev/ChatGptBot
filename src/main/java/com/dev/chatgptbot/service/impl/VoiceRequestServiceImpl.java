@@ -71,7 +71,7 @@ public class VoiceRequestServiceImpl implements VoiceRequestService {
     }
 
     private String response(OkHttpClient client, Request request) {
-        int retries = 5; // количество попыток повтора
+        int retries = 5;
         while (retries > 0) {
             try (Response response = client.newCall(request).execute()) {
                 voiceToString = objectMapper.readValue(response.body().string(), VoiceToString.class);
@@ -79,7 +79,7 @@ public class VoiceRequestServiceImpl implements VoiceRequestService {
             } catch (IOException e) {
                 retries--;
                 if (retries == 0) {
-                    throw new RuntimeException("Error executing request. Maximum number of retries exceeded.", e);
+                    log.error("Error executing request. Maximum number of retries exceeded.", e);
                 }
                 log.error("Error executing request. Trying again in 1 seconds. Retries left: " + retries);
                 try {

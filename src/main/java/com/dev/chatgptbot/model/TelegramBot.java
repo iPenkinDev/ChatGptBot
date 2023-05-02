@@ -18,10 +18,13 @@ import lombok.extern.log4j.Log4j;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.GetFile;
+import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.File;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.Voice;
+import org.telegram.telegrambots.meta.api.objects.commands.BotCommand;
+import org.telegram.telegrambots.meta.api.objects.commands.scope.BotCommandScopeDefault;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import javax.sound.sampled.LineUnavailableException;
@@ -33,6 +36,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 @Component
@@ -64,18 +68,50 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-        if (!isText(update)) {
+
+        if (update.hasMessage() && update.getMessage().hasText()) {
             String messageText = update.getMessage().getText();
-            addToDb(update);
             Long chatId = update.getMessage().getChatId();
-            handleCommand(messageText, chatId);
-        } else {
-            String messageText = voiceToText(update);
-            addVoiceToDb(update, messageText);
+
+            switch (messageText) {
+                case "/start":
+                    String firstName = update.getMessage().getChat().getFirstName();
+                    startCommandReceived(chatId, firstName);
+                    break;
+
+                default:
+                    addTextMessageToDb(update);
+                    sendMessage(chatId, String.valueOf(chatGpt.sendMessageToChatGptBot(messageText)));
+            }
+
+        //for voice messages
+        } else if (update.hasMessage() && update.getMessage().hasVoice()) {
+            botCommand();
+            Long chatId = update.getMessage().getChatId();
+
+            Voice voice = update.getMessage().getVoice();
+            getVoiceFile(voice);
+            String messageTextFromVoice;
+            try {
+                oggToWavConverter.convertTelegramVoiceToWav();
+                messageTextFromVoice = chatGpt.sendVoiceMessageToChatGptBot();
+                addVoiceMessageToDb(update, messageTextFromVoice);
+                sendMessage(chatId, String.valueOf(chatGpt.sendMessageToChatGptBot(messageTextFromVoice)));
+            } catch (UnsupportedAudioFileException | LineUnavailableException | IOException e) {
+                throw new RuntimeException(e);
+            }
         }
+        botCommand();
     }
 
-    private void addVoiceToDb(Update update, String messageText) {
+    private void startCommandReceived(Long chatId, String firstName) {
+
+        String answer = "Hi " + firstName + ", welcome to ChatGPT Bot!";
+        sendMessage(chatId, answer);
+
+    }
+
+    private void addVoiceMessageToDb(Update update, String messageText) {
         Messages messages = textToJson(update);
         if (!Objects.isNull(userService.getByTelegramId(messages.getFrom().getId()))) {
             messageService.createFromVoice(messageText, messages.getFrom().getId());
@@ -85,25 +121,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
-    private boolean isText(Update update) {
-        return update.getMessage().hasVoice();
-    }
-
-    private String voiceToText(Update update) {
-        Voice voice = update.getMessage().getVoice();
-        getVoiceFile(voice);
-        String messageText;
-        try {
-            oggToWavConverter.convertTelegramVoiceToWav();
-            messageText = chatGpt.sendVoiceMessageToChatGptBot();
-            handleCommand(messageText, update.getMessage().getChatId());
-        } catch (UnsupportedAudioFileException | LineUnavailableException | IOException e) {
-            throw new RuntimeException(e);
-        }
-        return messageText;
-    }
-
-    private void addToDb(Update update) {
+    private void addTextMessageToDb(Update update) {
         Messages messages = textToJson(update);
         if (!Objects.isNull(userService.getByTelegramId(messages.getFrom().getId()))) {
             messageService.create(messages, messages.getFrom().getId());
@@ -144,26 +162,14 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
 
-    private void handleCommand(String messageText, long chatId) {
-        if (messageText == null) {
-            return;
-        }
-        if (messageText.equals("/start")) {
-            sendTextMessage(chatId, "Hello, I'm ChatGptBot!");
-        } else {
-            sendTextMessage(chatId, String.valueOf(chatGpt.sendMessageToChatGptBot(messageText)));
-        }
-    }
+    private void sendMessage(Long chatId, String messageText) {
 
-    private void sendTextMessage(long chatId, String messageText) {
-
-        int maxLength = 4096; // максимальная длина сообщения
-
+        int maxLength = 4096; //max length message
         if (messageText.length() > maxLength) {
-            // разделение сообщения на несколько частей
+            //split message
             ArrayList<String> messages = messageSpliterator.splitMessage(messageText, maxLength);
 
-            // отправка каждой части сообщения отдельно
+            //send chunk message
             for (String msg : messages) {
                 sendMessage.setChatId(chatId);
                 sendMessage.setText(msg);
@@ -174,18 +180,43 @@ public class TelegramBot extends TelegramLongPollingBot {
                 }
             }
         } else {
-            // отправка сообщения целиком
-
+            // send full message
             sendMessage.setChatId(chatId);
             sendMessage.setText(messageText);
             sendMessage.setText(MessageMarkdownEntity.escapeMarkdown(sendMessage.getText()));
             sendMessage.setParseMode("Markdown");
             log.info("response: " + messageText);
-            try {
-                execute(sendMessage); // отправка сообщения
-            } catch (TelegramApiException e) {
-                e.printStackTrace();
+
+            final int maxTries = 3;
+            int tryCount = 0;
+            boolean sent = false;
+            while (!sent && tryCount < maxTries) {
+                try {
+                    execute(sendMessage);
+                    sent = true;
+                } catch (TelegramApiException e) {
+                    log.error("Error when send message: " + e.getMessage());
+                    tryCount++;
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException ex) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
             }
+            if (tryCount == maxTries && !sent) {
+                log.error("Failed to send message after " + tryCount + " tries.");
+            }
+        }
+    }
+
+    private void botCommand(){
+        List<BotCommand> botCommands = new ArrayList<>();
+        botCommands.add(new BotCommand("/start", "get a welcome message"));
+        try {
+            execute(new SetMyCommands(botCommands, new BotCommandScopeDefault(), null));
+        } catch (TelegramApiException e) {
+            log.error("Error setting bot command list: " + e.getMessage());
         }
     }
 }
