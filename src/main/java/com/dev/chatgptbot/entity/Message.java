@@ -18,7 +18,7 @@ public class Message {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "telegram_id", referencedColumnName = "telegram_id")
+    @JoinColumn(name = "telegram_id")
     private User user;
 
     @Column(name = "message")

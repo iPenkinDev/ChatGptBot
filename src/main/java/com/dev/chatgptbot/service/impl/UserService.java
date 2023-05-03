@@ -16,10 +16,10 @@ public class UserService {
 
     public User create(Messages messages) {
         User user = new User();
+        user.setTelegramId(messages.getFrom().getId());
         user.setUserName(messages.getFrom().getUsername());
         user.setFirstName(messages.getFrom().getFirst_name());
         user.setLastName(messages.getChat().getLastName());
-        user.setTelegramId(messages.getFrom().getId());
 
         userRepository.save(user);
         return user;

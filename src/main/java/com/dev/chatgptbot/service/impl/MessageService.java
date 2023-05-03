@@ -35,7 +35,4 @@ public class MessageService {
         messageRepository.save(message);
     }
 
-    public Message getMessageByUserOrderByDateDesc(User user) {
-        return messageRepository.getMessageByUserOrderByDateDesc(user);
-    }
 }
