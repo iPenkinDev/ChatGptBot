@@ -9,6 +9,7 @@ import com.dev.chatgptbot.model.pojo.text2text.MessageSpliterator;
 import com.dev.chatgptbot.service.impl.MessageService;
 import com.dev.chatgptbot.service.impl.UserService;
 import com.dev.chatgptbot.util.TelegramBotUtils;
+import com.dev.chatgptbot.util.UserSession;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
@@ -68,11 +69,11 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-
         //text messages
         if (update.hasMessage() && update.getMessage().hasText()) {
             String messageText = update.getMessage().getText();
             Long chatId = update.getMessage().getChatId();
+            UserSession.saveUserId(chatId);
 
             switch (messageText) {
                 case "/start":
@@ -217,4 +218,5 @@ public class TelegramBot extends TelegramLongPollingBot {
             log.error("Error setting bot command list: " + e.getMessage());
         }
     }
+
 }

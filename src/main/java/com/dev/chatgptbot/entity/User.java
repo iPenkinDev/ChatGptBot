@@ -32,4 +32,7 @@ public class User implements Serializable{
     @OneToMany(mappedBy = "user")
     private List<Message> messages;
 
+    public Long getTelegramId() {
+        return telegramId;
+    }
 }

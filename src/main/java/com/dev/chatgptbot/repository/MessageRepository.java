@@ -5,8 +5,11 @@ import com.dev.chatgptbot.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+import java.util.Optional;
+
 @Repository
 public interface MessageRepository extends JpaRepository<Message, Long> {
 
-    Message getMessageByUserTelegramIdOrderByDateDesc(Long telegramId);
+    Optional<List<Message>> findByUser(User user);
 }

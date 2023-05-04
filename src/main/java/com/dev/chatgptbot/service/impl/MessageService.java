@@ -2,6 +2,7 @@ package com.dev.chatgptbot.service.impl;
 
 import com.dev.chatgptbot.entity.Message;
 import com.dev.chatgptbot.entity.User;
+import com.dev.chatgptbot.exception.ResourceNotFoundException;
 import com.dev.chatgptbot.model.pojo.telegramPojo.Messages;
 import com.dev.chatgptbot.repository.MessageRepository;
 import com.dev.chatgptbot.repository.UserRepository;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -39,18 +41,11 @@ public class MessageService {
         messageRepository.save(message);
     }
 
-    public List<String> getMessageByUserTelegramIdOrderByDateDesc(Long telegramId) {
-        List<String> messagesList = new ArrayList<>();
-        try {
-            Long userId = userRepository.getByTelegramId(telegramId).getTelegramId();
-            Message messageByUserTelegramIdOrderByDateDesc = messageRepository.getMessageByUserTelegramIdOrderByDateDesc(userId);
-            for (int i = 0; i < 5; i++) {
-                messagesList.add(messageByUserTelegramIdOrderByDateDesc.getMessage());
-            }
-            return messagesList;
-        } catch (RuntimeException e) {
-            log.error("User not found: " + e.getMessage());
-        }
-        return null;
+    public List<Message> getMessagesByUser(User user) {
+        Optional<List<Message>> messageOptional = messageRepository.findByUser(user);
+        return messageOptional.orElseThrow(() ->
+                new ResourceNotFoundException("message ", "telegramId ", user.getTelegramId()));
     }
-}
+
+
+ }

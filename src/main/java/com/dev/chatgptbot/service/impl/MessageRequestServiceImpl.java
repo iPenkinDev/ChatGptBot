@@ -1,11 +1,14 @@
 package com.dev.chatgptbot.service.impl;
 
 import com.dev.chatgptbot.config.ChatGptConfig;
+import com.dev.chatgptbot.entity.Message;
 import com.dev.chatgptbot.entity.User;
 import com.dev.chatgptbot.model.TelegramBot;
 import com.dev.chatgptbot.model.pojo.text2text.ChatCompletion;
+import com.dev.chatgptbot.repository.UserRepository;
 import com.dev.chatgptbot.service.MessageRequestService;
 import com.dev.chatgptbot.util.ChatGptUtils;
+import com.dev.chatgptbot.util.UserSession;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -27,6 +30,7 @@ import java.util.Map;
 @Log4j
 @RequiredArgsConstructor
 public class MessageRequestServiceImpl implements MessageRequestService {
+    private final UserRepository userRepository;
 
     private final RestTemplate restTemplate;
     private final ChatGptConfig chatGptConfig;
@@ -34,7 +38,6 @@ public class MessageRequestServiceImpl implements MessageRequestService {
     private final ObjectMapper objectMapper;
     private ChatCompletion chatCompletion;
     private final MessageService messageService;
-    private final User user;
 
 
     @Override
@@ -66,8 +69,8 @@ public class MessageRequestServiceImpl implements MessageRequestService {
     }
 
     private HttpEntity<Map<String, Object>> buildRequest(String textMessage) {
-        Long telegramId = user.getTelegramId();
-        List<String> messageByUserFromDb = getMessageByUserFromDb(telegramId);
+        long savedUserId = UserSession.getSavedUserId();
+        List<Message> messagesByUser = messageService.getMessagesByUser(userRepository.getByTelegramId(savedUserId));
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -77,10 +80,10 @@ public class MessageRequestServiceImpl implements MessageRequestService {
         requestBody.put("model", "gpt-3.5-turbo");
         List<Map<String, Object>> messages = new ArrayList<>();
 
-        for (String message : messageByUserFromDb) {
+        for (Message message : messagesByUser) {
             Map<String, Object> messageMap = new HashMap<>();
             messageMap.put("role", "user");
-            messageMap.put("content", message);
+            messageMap.put("content", message.getMessage());
             messages.add(messageMap);
            // log.info("messageMap = " + messageMap);
         }
@@ -91,7 +94,4 @@ public class MessageRequestServiceImpl implements MessageRequestService {
         return new HttpEntity<>(requestBody, headers);
     }
 
-    private List<String> getMessageByUserFromDb(Long telegramId) {
-        return messageService.getMessageByUserTelegramIdOrderByDateDesc(user.getTelegramId());
-    }
 }
