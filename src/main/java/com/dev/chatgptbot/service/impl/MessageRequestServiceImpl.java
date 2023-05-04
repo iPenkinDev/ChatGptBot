@@ -1,6 +1,8 @@
 package com.dev.chatgptbot.service.impl;
 
 import com.dev.chatgptbot.config.ChatGptConfig;
+import com.dev.chatgptbot.entity.User;
+import com.dev.chatgptbot.model.TelegramBot;
 import com.dev.chatgptbot.model.pojo.text2text.ChatCompletion;
 import com.dev.chatgptbot.service.MessageRequestService;
 import com.dev.chatgptbot.util.ChatGptUtils;
@@ -14,8 +16,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.api.objects.Message;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,9 +33,9 @@ public class MessageRequestServiceImpl implements MessageRequestService {
     private final ChatGptUtils chatGptUtils;
     private final ObjectMapper objectMapper;
     private ChatCompletion chatCompletion;
-    private final UserService userService;
     private final MessageService messageService;
-    private List<String> messagesList = new ArrayList<>();
+    private final User user;
+
 
     @Override
     public String sendRequest(String message) {
@@ -66,8 +66,8 @@ public class MessageRequestServiceImpl implements MessageRequestService {
     }
 
     private HttpEntity<Map<String, Object>> buildRequest(String textMessage) {
-
-        messagesList.add(textMessage);
+        Long telegramId = user.getTelegramId();
+        List<String> messageByUserFromDb = getMessageByUserFromDb(telegramId);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -77,7 +77,7 @@ public class MessageRequestServiceImpl implements MessageRequestService {
         requestBody.put("model", "gpt-3.5-turbo");
         List<Map<String, Object>> messages = new ArrayList<>();
 
-        for (String message : messagesList) {
+        for (String message : messageByUserFromDb) {
             Map<String, Object> messageMap = new HashMap<>();
             messageMap.put("role", "user");
             messageMap.put("content", message);
@@ -91,11 +91,7 @@ public class MessageRequestServiceImpl implements MessageRequestService {
         return new HttpEntity<>(requestBody, headers);
     }
 
-    private String getMessageByUserFromDb() {
-//        User userByTelegramId = userService.getByTelegramId();
-//       com.dev.chatgptbot.entity.Message messageByUserOrderByDateDesc = messageService.getMessageByUserOrderByDateDesc(userByTelegramId);
-//        String message = messageByUserOrderByDateDesc.getMessage();
-//        return message;
-        return null;
+    private List<String> getMessageByUserFromDb(Long telegramId) {
+        return messageService.getMessageByUserTelegramIdOrderByDateDesc(user.getTelegramId());
     }
 }

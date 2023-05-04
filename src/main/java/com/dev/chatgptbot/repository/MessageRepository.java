@@ -8,4 +8,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface MessageRepository extends JpaRepository<Message, Long> {
 
+    Message getMessageByUserTelegramIdOrderByDateDesc(Long telegramId);
 }
