@@ -25,10 +25,6 @@ public class ChatGpt {
         return sendMessageService.sendRequest(text);
     }
 
-    public String sendVoiceMessageToChatGptBot(String response) throws IOException, InterruptedException {
-        log.info("sendVoiceMessageToChatGpt: " + response);
-        return voiceService.voiceToString(response);
-    }
     public String sendVoiceMessageToChatGptBot() {
         log.info("sendVoiceMessageToChatGpt: ");
         return voiceService.voiceNotString();

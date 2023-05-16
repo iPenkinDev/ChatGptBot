@@ -7,6 +7,8 @@ import org.springframework.stereotype.Component;
 @Data
 public class ChatGptUtils {
 
+    private final String GPT_BASE_URL = "https://api.openai.com";
+
     private final String GPT_SEND_MESSAGE_URL = "https://api.openai.com/v1/chat/completions";
 
     private final String GPT_SEND_VOICE_URL = "https://api.openai.com/v1/audio/transcriptions";

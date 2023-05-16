@@ -2,8 +2,6 @@ package com.dev.chatgptbot.service.impl;
 
 import com.dev.chatgptbot.config.ChatGptConfig;
 import com.dev.chatgptbot.entity.Message;
-import com.dev.chatgptbot.entity.User;
-import com.dev.chatgptbot.model.TelegramBot;
 import com.dev.chatgptbot.model.pojo.text2text.ChatCompletion;
 import com.dev.chatgptbot.repository.UserRepository;
 import com.dev.chatgptbot.service.MessageRequestService;
@@ -38,7 +36,6 @@ public class MessageRequestServiceImpl implements MessageRequestService {
     private final ObjectMapper objectMapper;
     private ChatCompletion chatCompletion;
     private final MessageService messageService;
-
 
     @Override
     public String sendRequest(String message) {
@@ -89,9 +86,8 @@ public class MessageRequestServiceImpl implements MessageRequestService {
         }
 
         requestBody.put("messages", messages);
-        requestBody.put("temperature", 0.1);
 
         return new HttpEntity<>(requestBody, headers);
     }
-
+    // double cost = totalToken * 0,000002;
 }

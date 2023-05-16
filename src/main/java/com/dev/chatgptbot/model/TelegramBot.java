@@ -4,6 +4,7 @@ import com.dev.chatgptbot.config.TelegramBotConfig;
 import com.dev.chatgptbot.converter.OggToWavConverter;
 import com.dev.chatgptbot.entity.User;
 import com.dev.chatgptbot.model.pojo.telegramPojo.Messages;
+import com.dev.chatgptbot.model.pojo.text2text.ChatCompletion;
 import com.dev.chatgptbot.model.pojo.text2text.MessageMarkdownEntity;
 import com.dev.chatgptbot.model.pojo.text2text.MessageSpliterator;
 import com.dev.chatgptbot.service.impl.MessageService;
@@ -56,6 +57,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     private final MessageSpliterator messageSpliterator;
     private final UserService userService;
     private final MessageService messageService;
+    private final ChatCompletion chatCompletion;
 
     @Override
     public String getBotUsername() {
@@ -69,41 +71,71 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
+        botCommand();
+
         //text messages
         if (update.hasMessage() && update.getMessage().hasText()) {
             String messageText = update.getMessage().getText();
             Long chatId = update.getMessage().getChatId();
             UserSession.saveUserId(chatId);
+            getTokens();
 
             switch (messageText) {
-                case "/start":
+                case "/start" -> {
                     String firstName = update.getMessage().getChat().getFirstName();
                     startCommandReceived(chatId, firstName);
-                    break;
-
-                default:
+                }
+                case "/reset_history" -> {
+                    deleteMessagesFromDbByUser(chatId);
+                    resetHistoryCommandReceived(chatId);
+                }
+                default -> {
+                    waitAnswerText(chatId);
                     addTextMessageToDb(update);
                     sendMessage(chatId, String.valueOf(chatGpt.sendMessageToChatGptBot(messageText)));
+                  //  getTokens();
+
+                }
             }
 
-        //voice messages
+            //voice messages
         } else if (update.hasMessage() && update.getMessage().hasVoice()) {
-            botCommand();
             Long chatId = update.getMessage().getChatId();
-
+            UserSession.saveUserId(chatId);
+            getTokens();
             Voice voice = update.getMessage().getVoice();
             getVoiceFile(voice);
             String messageTextFromVoice;
             try {
                 oggToWavConverter.convertTelegramVoiceToWav();
                 messageTextFromVoice = chatGpt.sendVoiceMessageToChatGptBot();
+                waitAnswerText(chatId);
                 addVoiceMessageToDb(update, messageTextFromVoice);
                 sendMessage(chatId, String.valueOf(chatGpt.sendMessageToChatGptBot(messageTextFromVoice)));
             } catch (UnsupportedAudioFileException | LineUnavailableException | IOException e) {
                 throw new RuntimeException(e);
             }
         }
-        botCommand();
+    }
+
+    private void errorMessage(Long chatId) {
+        String answer = "Your message is so long. Please try send shortly message";
+        sendMessage(chatId, answer);
+    }
+
+    private void waitAnswerText(Long chatId) {
+        String answer = "Wait a second, I'm thinking...";
+        sendMessage(chatId, answer);
+    }
+
+    private void resetHistoryCommandReceived(Long chatId) {
+        String answer = "Your history has been deleted";
+        sendMessage(chatId, answer);
+    }
+
+    private void deleteMessagesFromDbByUser(Long chatId) {
+        User user = userService.getByTelegramId(chatId);
+        messageService.deleteAllByUser(user);
     }
 
     private void startCommandReceived(Long chatId, String firstName) {
@@ -209,9 +241,10 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
-    private void botCommand(){
+    private void botCommand() {
         List<BotCommand> botCommands = new ArrayList<>();
         botCommands.add(new BotCommand("/start", "get a welcome message"));
+        botCommands.add(new BotCommand("/reset_history", "delete all messages from history"));
         try {
             execute(new SetMyCommands(botCommands, new BotCommandScopeDefault(), null));
         } catch (TelegramApiException e) {
@@ -219,4 +252,18 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
+    private void getTokens() {
+        int completionTokens = chatCompletion.getUsage().getCompletionTokens();
+        int totalTokens = chatCompletion.getUsage().getTotalTokens();
+        int promptTokens = chatCompletion.getUsage().getPromptTokens();
+
+        if (promptTokens > 10) {
+            errorMessage(UserSession.getSavedUserId());
+        }
+
+
+        System.out.println("promptTokens = " + promptTokens);
+        System.out.println("completionTokens = " + completionTokens);
+        System.out.println("totalTokens = " + totalTokens);
+    }
 }

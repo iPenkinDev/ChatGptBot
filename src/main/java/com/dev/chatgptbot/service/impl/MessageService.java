@@ -9,6 +9,7 @@ import com.dev.chatgptbot.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -39,6 +40,11 @@ public class MessageService {
         message.setUser(userRepository.getByTelegramId(telegramId));
 
         messageRepository.save(message);
+    }
+
+    @Transactional
+    public void deleteAllByUser(User user) {
+        messageRepository.deleteAllByUser(user);
     }
 
     public List<Message> getMessagesByUser(User user) {
