@@ -78,7 +78,7 @@ public class TelegramBot extends TelegramLongPollingBot {
             String messageText = update.getMessage().getText();
             Long chatId = update.getMessage().getChatId();
             UserSession.saveUserId(chatId);
-            getTokens();
+
 
             switch (messageText) {
                 case "/start" -> {
@@ -90,10 +90,14 @@ public class TelegramBot extends TelegramLongPollingBot {
                     resetHistoryCommandReceived(chatId);
                 }
                 default -> {
+                    if (limitFirstMessage(messageText, chatId)) {
+                        errorMessage(chatId);
+                        return;
+                    }
                     waitAnswerText(chatId);
                     addTextMessageToDb(update);
                     sendMessage(chatId, String.valueOf(chatGpt.sendMessageToChatGptBot(messageText)));
-                  //  getTokens();
+                    //  getTokens();
 
                 }
             }
@@ -102,7 +106,6 @@ public class TelegramBot extends TelegramLongPollingBot {
         } else if (update.hasMessage() && update.getMessage().hasVoice()) {
             Long chatId = update.getMessage().getChatId();
             UserSession.saveUserId(chatId);
-            getTokens();
             Voice voice = update.getMessage().getVoice();
             getVoiceFile(voice);
             String messageTextFromVoice;
@@ -252,18 +255,17 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
-    private void getTokens() {
-        int completionTokens = chatCompletion.getUsage().getCompletionTokens();
-        int totalTokens = chatCompletion.getUsage().getTotalTokens();
-        int promptTokens = chatCompletion.getUsage().getPromptTokens();
-
-        if (promptTokens > 10) {
-            errorMessage(UserSession.getSavedUserId());
+    //limit first message
+    private boolean limitFirstMessage(String message, Long chatId) {
+//        if (!Objects.isNull(userService.getByTelegramId(messages.getFrom().getId()))) {
+//
+//        }
+        int count = 0;
+        for (char ch : message.toCharArray()) {
+            if (ch != ' ') {
+                count++;
+            }
         }
-
-
-        System.out.println("promptTokens = " + promptTokens);
-        System.out.println("completionTokens = " + completionTokens);
-        System.out.println("totalTokens = " + totalTokens);
+        return count >= 10;
     }
 }

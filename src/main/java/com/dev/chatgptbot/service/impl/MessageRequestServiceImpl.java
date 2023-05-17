@@ -47,8 +47,9 @@ public class MessageRequestServiceImpl implements MessageRequestService {
 
                 objectMapper.registerModule(new JavaTimeModule());
                 chatCompletion = objectMapper.readValue(response, ChatCompletion.class);
+                getTokens();
                 return chatCompletion.getChoices().get(0).getMessage().getContent();
-            } catch (RuntimeException | JsonProcessingException e) {
+            } catch (JsonProcessingException | RuntimeException e) {
                 retries--;
                 if (retries == 0) {
                     log.error("Request failed after " + retries + " retries.", e);
@@ -89,5 +90,24 @@ public class MessageRequestServiceImpl implements MessageRequestService {
 
         return new HttpEntity<>(requestBody, headers);
     }
+
+    private void getTokens() {
+        int completionTokens = chatCompletion.getUsage().getCompletionTokens();
+        int totalTokens = chatCompletion.getUsage().getTotalTokens();
+        int promptTokens = chatCompletion.getUsage().getPromptTokens();
+
+        if (promptTokens > 10) {
+            //TODO logic
+
+        }
+
+
+        System.out.println("promptTokens = " + promptTokens);
+        System.out.println("completionTokens = " + completionTokens);
+        System.out.println("totalTokens = " + totalTokens);
+    }
+
+
+
     // double cost = totalToken * 0,000002;
 }
