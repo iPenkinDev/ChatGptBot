@@ -66,7 +66,6 @@ public class VoiceRequestServiceImpl implements VoiceRequestService {
                 .build();
 
         log.info("request: " + request);
-
         return response(client, request);
     }
 
