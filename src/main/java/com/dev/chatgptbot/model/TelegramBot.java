@@ -90,10 +90,10 @@ public class TelegramBot extends TelegramLongPollingBot {
                     resetHistoryCommandReceived(chatId);
                 }
                 default -> {
-                    if (limitFirstMessage(messageText, chatId)) {
-                        errorMessage(chatId);
-                        return;
-                    }
+//                    if (limitFirstMessage(messageText, chatId)) {
+//                        errorMessage(chatId);
+//                        return;
+//                    }
                     waitAnswerText(chatId);
                     addTextMessageToDb(update);
                     sendMessage(chatId, String.valueOf(chatGpt.sendMessageToChatGptBot(messageText)));
